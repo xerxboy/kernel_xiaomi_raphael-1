@@ -17,7 +17,7 @@
 #include <linux/stacktrace.h>
 #include <linux/seq_file.h>
 
-#define DMA_BUF_STACK_DEPTH (16)
+#define DMA_BUF_STACK_DEPTH (32)
 
 struct dma_buf_ref {
 	struct list_head list;
