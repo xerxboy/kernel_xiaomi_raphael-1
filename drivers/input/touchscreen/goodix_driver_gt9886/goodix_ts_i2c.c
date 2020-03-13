@@ -1450,7 +1450,7 @@ static int goodix_hw_init(struct goodix_ts_device *ts_dev)
 			ts_dev->chip_version.sensor_id);
 	if (r < 0)
 		ts_info("Cann't find customized parameters");
-	
+
 	ts_dev->normal_cfg->delay = 500;
 	/* send normal-cfg to firmware */
 	r = goodix_send_config(ts_dev, ts_dev->normal_cfg);
@@ -1469,8 +1469,6 @@ int goodix_hw_reset(struct goodix_ts_device *dev)
 	u8 data[2] = {0x00};
 	int r = 0;
 
-	ts_info("HW reset");
-	ts_info("ic_type = %d\n", dev->ic_type);
 	dev->ic_type = IC_TYPE_NORMANDY;
 	if (dev->ic_type == IC_TYPE_NORMANDY) {
 		ts_info("touchpanel normandy reset");
@@ -1692,7 +1690,7 @@ static int goodix_remap_trace_id(struct goodix_ts_device *dev,
 			}
 			offset += BYTES_PER_COORD;
 		}
-	
+
 	}
 
 	/*for (i = 0; i < touch_num; i++) {
@@ -2012,7 +2010,6 @@ static int goodix_hw_resume(struct goodix_ts_device *dev)
 
 			checksum = checksum_u8(temp_buf, dev->reg.version_len);
 			if (!checksum) {
-				ts_info("read version SUCCESS");
 				break;
 			}
 		}
@@ -2137,7 +2134,7 @@ static int goodix_i2c_probe(struct i2c_client *client,
 	ts_device->dev = &client->dev;
 	ts_device->board_data = ts_bdata;
 	ts_device->hw_ops = &hw_i2c_ops;
-	
+
 
 	/* ts core device */
 	goodix_pdev = kzalloc(sizeof(struct platform_device), GFP_KERNEL);

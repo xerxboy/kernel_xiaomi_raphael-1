@@ -712,7 +712,6 @@ static void release_all_touches(struct goodix_ts_core *core_data)
 		input_mt_slot(core_data->input_dev, i);
 		input_mt_report_slot_state(core_data->input_dev, type, 0);
 	}
-	ts_err("enter:%s core_data->touch_id=%d\n", __func__, core_data->touch_id);
 	core_data->sleep_finger = core_data->touch_id;
 	core_data->touch_id = 0;
 	input_sync(core_data->input_dev);
@@ -738,7 +737,7 @@ static int goodix_ts_input_report(struct input_dev *dev,
 
 	if (core_data->fod_status){
 		if ((core_data->event_status & 0x20) == 0x20){
-			ts_info("%s:the data sended was error,return\n",__func__);
+			ts_err("%s:the data sended was error,return\n",__func__);
 			return 0;
 		}
 	}
@@ -765,9 +764,7 @@ static int goodix_ts_input_report(struct input_dev *dev,
 				coords->overlapping_area = 0;
 			input_report_abs(dev, ABS_MT_WIDTH_MINOR, coords->overlapping_area);
 			input_report_abs(dev, ABS_MT_WIDTH_MAJOR, coords->overlapping_area);
-			if (!__test_and_set_bit(i, &core_data->touch_id)) {
-				ts_info("[GTP] %s report press:%d", __func__, i);
-			}
+			__set_bit(i, &core_data->touch_id);
 			dev_dbg(core_data->ts_dev->dev, "[GTP] %s report:[%d](%d, %d, %d, %d)", __func__, id,
 				touch_data->coords[0].x, touch_data->coords[0].y,
 				touch_data->coords[0].area, touch_data->coords[0].overlapping_area);
@@ -781,7 +778,6 @@ static int goodix_ts_input_report(struct input_dev *dev,
 					input_report_key(dev, BTN_TOOL_FINGER, 0);
 					core_data->sleep_finger = 0;
 				}
-				ts_info("[GTP] %s report leave:%d", __func__, i);
 			}
 		}
 	}
@@ -895,7 +891,6 @@ static irqreturn_t goodix_ts_threadirq_func(int irq, void *data)
 		r = ext_module->funcs->irq_event(core_data, ext_module);
 		/*ts_err("enter %s r=%d\n", __func__, r);*/
 		if (r == EVT_CANCEL_IRQEVT) {
-			ts_err("enter %s EVT_CANCEL_IRQEVT \n", __func__);
 			mutex_unlock(&goodix_modules.mutex);
 			return IRQ_HANDLED;
 		}
@@ -1118,8 +1113,9 @@ static ssize_t gtp_fod_test_store(struct device *dev,
 	int value = 0;
 	struct goodix_ts_core *core_data = dev_get_drvdata(dev);
 
-	ts_info("buf:%c,count:%zu\n", buf[0], count);
 	sscanf(buf, "%u", &value);
+	ts_info("store: %d", value);
+
 	if (value) {
 		input_report_key(core_data->input_dev, BTN_INFO, 1);
 		/*input_report_key(core_data->input_dev, KEY_INFO, 1);*/
@@ -1160,7 +1156,7 @@ static ssize_t gtp_fod_status_store(struct device *dev,
 {
 	struct goodix_ts_core *core_data = dev_get_drvdata(dev);
 	//struct goodix_ts_event *ts_event = &core_data->ts_event;
-	ts_info("buf:%s, count:%zu\n", buf, count);
+	ts_info("store: %s", buf);
 	sscanf(buf, "%u", &core_data->fod_status);
 
 	//goodix_ts_input_report(core_data->input_dev,&ts_event->event_data.touch_data);
@@ -1505,8 +1501,6 @@ int goodix_ts_suspend(struct goodix_ts_core *core_data)
 	struct goodix_ts_device *ts_dev = core_data->ts_dev;
 	int r = 0;
 
-	ts_info("Suspend start");
-
 	mutex_lock(&core_data->work_stat);
 	if (atomic_read(&core_data->suspend_stat)) {
 		ts_info("suspended, skip");
@@ -1536,8 +1530,6 @@ int goodix_ts_suspend(struct goodix_ts_core *core_data)
 					atomic_set(&core_data->suspend_stat, TP_GESTURE_FOD);
 				}
 				mutex_unlock(&goodix_modules.mutex);
-				ts_info("suspend_stat[%d]", atomic_read(&core_data->suspend_stat));
-				ts_info("Canceled by module:%s", ext_module->name);
 				if(!atomic_read(&core_data->suspend_stat))
 					ts_info("go suspend remaind work\n");
 				else
@@ -1592,7 +1584,6 @@ out:
 
 	mutex_unlock(&core_data->work_stat);
 
-	ts_info("Suspend end");
 	return 0;
 }
 
@@ -1606,7 +1597,6 @@ int goodix_ts_resume(struct goodix_ts_core *core_data)
 	struct goodix_ts_device *ts_dev = core_data->ts_dev;
 	int r = 0;
 
-	ts_info("Resume start");
 	/*goodix_ts_irq_enable(core_data, false);*/
 	mutex_lock(&core_data->work_stat);
 	if (!atomic_read(&core_data->suspend_stat)) {
@@ -1624,7 +1614,6 @@ int goodix_ts_resume(struct goodix_ts_core *core_data)
 			r = ext_module->funcs->before_resume(core_data, ext_module);
 			if (r == EVT_CANCEL_RESUME) {
 				mutex_unlock(&goodix_modules.mutex);
-				ts_info("Canceled by module:%s", ext_module->name);
 				goto out;
 			}
 		}
@@ -1655,7 +1644,6 @@ int goodix_ts_resume(struct goodix_ts_core *core_data)
 			r = ext_module->funcs->after_resume(core_data, ext_module);
 			if (r == EVT_CANCEL_RESUME) {
 				mutex_unlock(&goodix_modules.mutex);
-				ts_info("Canceled by module:%s", ext_module->name);
 				goto out;
 			}
 		}
@@ -1669,10 +1657,8 @@ out:
 	 */
 	goodix_ts_blocking_notify(NOTIFY_RESUME, NULL);
 
-	ts_err("core_data->fod_pressed = %d\n",core_data->fod_pressed);
 
 	if (!core_data->fod_pressed) {
-		ts_err("resume release all touch");
 		release_all_touches(core_data);
 	}
 	core_data->sleep_finger = 0;
@@ -1682,7 +1668,6 @@ out:
 
 	mutex_unlock(&core_data->work_stat);
 
-	ts_info("Resume end");
 	return 0;
 }
 
@@ -1722,16 +1707,12 @@ int goodix_ts_msm_drm_notifier_callback(struct notifier_block *self,
 		flush_workqueue(core_data->event_wq);
 		if (event == MSM_DRM_EVENT_BLANK && (blank == MSM_DRM_BLANK_POWERDOWN ||
 			blank == MSM_DRM_BLANK_LP1 || blank == MSM_DRM_BLANK_LP2)) {
-			ts_info("touchpanel suspend .....blank=%d\n",blank);
-			ts_info("touchpanel suspend .....suspend_stat=%d\n", atomic_read(&core_data->suspend_stat));
 			if (atomic_read(&core_data->suspend_stat))
 				return 0;
 			ts_info("touchpanel suspend by %s", blank == MSM_DRM_BLANK_POWERDOWN ? "blank" : "doze");
 			queue_work(core_data->event_wq, &core_data->suspend_work);
 		} else if (event == MSM_DRM_EVENT_BLANK && blank == MSM_DRM_BLANK_UNBLANK) {
 			//if (!atomic_read(&core_data->suspend_stat))
-			ts_info("core_data->suspend_stat = %d\n",atomic_read(&core_data->suspend_stat));
-			ts_info("touchpanel resume");
 			queue_work(core_data->event_wq, &core_data->resume_work);
 		}
 	}
