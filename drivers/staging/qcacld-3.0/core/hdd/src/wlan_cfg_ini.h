@@ -1,4 +1,4 @@
-const char wlan_cfg[] = {
+static const __initconst char wlan_cfg[] = {
 	"gEnableImps=1\n"
 	"gEnableBmps=1\n"
 	"gDot11Mode=0\n"
