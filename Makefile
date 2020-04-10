@@ -660,6 +660,12 @@ LD		:= $(LDGOLD)
 endif
 ifdef CONFIG_LD_LLD
 LD		:= $(LDLLD)
+# additional LLVM's tools
+AR      := llvm-ar
+NM      := llvm-nm
+OBJCOPY := llvm-objcopy
+OBJDUMP := llvm-objdump
+STRIP   := llvm-strip
 endif
 
 ifdef CONFIG_LTO_CLANG
