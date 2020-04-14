@@ -21485,6 +21485,11 @@ static const char *hdd_ieee80211_reason_code_to_str(uint16_t reason)
 		return "Unknown";
 	}
 }
+#else
+static const char *hdd_ieee80211_reason_code_to_str(uint16_t reason)
+{
+	return "Unknown";
+}
 #endif
 
 /**
@@ -21522,6 +21527,11 @@ hdd_qca_reason_to_str(enum qca_disconnect_reason_codes reason)
 	default:
 		return "Unknown";
 	}
+}
+#else
+static const char *hdd_qca_reason_to_str(enum qca_disconnect_reason_codes reason)
+{
+	return "";
 }
 #endif
 
