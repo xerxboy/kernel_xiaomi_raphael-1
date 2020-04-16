@@ -1087,12 +1087,15 @@ int dsi_display_set_power(struct drm_connector *connector,
 {
 	struct dsi_display *display = disp;
 	struct msm_drm_notifier g_notify_data;
+	int event = power_mode;
 	int rc = 0;
 
 	if (!display || !display->panel) {
 		pr_err("invalid display/panel\n");
 		return -EINVAL;
 	}
+
+	g_notify_data.data = &event;
 
 	switch (power_mode) {
 	case SDE_MODE_DPMS_LP1:
