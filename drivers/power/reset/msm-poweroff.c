@@ -249,7 +249,8 @@ static void scm_disable_sdi(void)
 
 void msm_set_restart_mode(int mode)
 {
-	restart_mode = mode;
+	if (mode != RESTART_DLOAD)
+		restart_mode = mode;
 }
 EXPORT_SYMBOL(msm_set_restart_mode);
 
