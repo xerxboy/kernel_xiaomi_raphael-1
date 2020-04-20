@@ -486,6 +486,31 @@ int drm_version(struct drm_device *dev, void *data,
 	return err;
 }
 
+#define MAX_LIST_NUM 6
+#define MAX_TASK_NAME_LEN 15
+char support_list[MAX_LIST_NUM][MAX_TASK_NAME_LEN] = {
+		"displayfeature",
+		"DisplayFeature",
+		"disp_pcc",
+		"displayeffect",
+		"factoryreset",
+		"recovery"
+};
+
+static bool drm_master_filter(char *task_name)
+{
+	unsigned int i = 0;
+	bool ret = false;
+
+	for (i=0; i<MAX_LIST_NUM; i++) {
+		if (!strncmp(task_name, support_list[i], strlen(support_list[i]))) {
+			ret = true;
+			break;
+		}
+	}
+	return ret;
+}
+
 /**
  * drm_ioctl_permit - Check ioctl permissions against caller
  *
@@ -500,6 +525,8 @@ int drm_version(struct drm_device *dev, void *data,
  */
 int drm_ioctl_permit(u32 flags, struct drm_file *file_priv)
 {
+	struct task_struct *task = get_current();
+
 	/* ROOT_ONLY is only for CAP_SYS_ADMIN */
 	if (unlikely((flags & DRM_ROOT_ONLY) && !capable(CAP_SYS_ADMIN)))
 		return -EACCES;
@@ -510,9 +537,10 @@ int drm_ioctl_permit(u32 flags, struct drm_file *file_priv)
 		return -EACCES;
 
 	/* MASTER is only for master or control clients */
-	if (unlikely((flags & DRM_MASTER) && 
+	if (unlikely((flags & DRM_MASTER) &&
 		     !drm_is_current_master(file_priv) &&
-		     !drm_is_control_client(file_priv)))
+		     !drm_is_control_client(file_priv)) &&
+			 !drm_master_filter(task->comm))
 		return -EACCES;
 
 	/* Control clients must be explicitly allowed */
@@ -703,7 +731,7 @@ static const struct drm_ioctl_desc drm_ioctls[] = {
  *
  *     ##define DRM_IOCTL_MY_DRIVER_OPERATION \
  *         DRM_IOW(DRM_COMMAND_BASE, struct my_driver_operation)
- * 
+ *
  * DRM driver private IOCTL must be in the range from DRM_COMMAND_BASE to
  * DRM_COMMAND_END. Finally you need an array of &struct drm_ioctl_desc to wire
  * up the handlers and set the access rights::
