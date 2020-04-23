@@ -317,7 +317,7 @@ struct bias_config {
 	int	bias_kohms;
 };
 
-static int fg_gen4_debug_mask = FG_STATUS | FG_IRQ;
+static int fg_gen4_debug_mask;
 module_param_named(
 	debug_mask, fg_gen4_debug_mask, int, 0600
 );
@@ -5830,7 +5830,8 @@ static void soc_work_fn(struct work_struct *work)
 	if (rc < 0)
 		pr_err("failed to get cycle count, rc=%d\n", rc);
 
-	pr_info("adjust_soc: s %d r %d i %d v %d t %d cc %d m 0x%02x\n",
+	fg_dbg(fg, FG_STATUS,
+			"adjust_soc: s %d r %d i %d v %d t %d cc %d m 0x%02x\n",
 			soc,
 			esr_uohms,
 			curr_ua/1000,
